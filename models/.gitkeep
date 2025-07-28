@@ -1,0 +1,2 @@
+# This file ensures the models directory is tracked by git
+# AI model files (like llama-3-8b-q4_0.gguf) should be placed here 

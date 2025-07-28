@@ -56,6 +56,7 @@ cp env.example .env  # Edit .env with your credentials
 
 ### 3. Download AI Models
 - Download Llama 3 8B (quantized) and place in `models/`
+- See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for directory organization
 
 ### 4. Start the Application
 ```bash
@@ -69,7 +70,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ## 🧪 Testing
 ```bash
 pytest
-python test_pipeline.py
+python scripts/test_pipeline.py
 ```
 
 ## 📚 API Reference

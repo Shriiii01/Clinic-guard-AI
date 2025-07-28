@@ -129,6 +129,12 @@ env.bak/
 venv.bak/
 venv310/
 
+# Virtual environments
+venv/
+venv310/
+env/
+.venv/
+
 # Spyder project settings
 .spyderproject
 .spyproject
