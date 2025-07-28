@@ -5,48 +5,37 @@
 ![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.109.2-green?style=for-the-badge&logo=fastapi)
 ![Twilio](https://img.shields.io/badge/Twilio-Voice-orange?style=for-the-badge&logo=twilio)
-![HIPAA](https://img.shields.io/badge/HIPAA-Compliant-green?style=for-the-badge&logo=security)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/Shriiii01/Clinic-guard-AI?style=social)](https://github.com/Shriiii01/Clinic-guard-AI/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/Shriiii01/Clinic-guard-AI?style=social)](https://github.com/Shriiii01/Clinic-guard-AI/network)
-[![GitHub issues](https://img.shields.io/github/issues/Shriiii01/Clinic-guard-AI)](https://github.com/Shriiii01/Clinic-guard-AI/issues)
 
-**A HIPAA-compliant AI-powered call handling system for medical clinics**
+**AI-powered call handling system for medical clinics**
 
-*Revolutionizing healthcare communication with intelligent voice AI*
+*Work in progress - Voice AI for healthcare*
 
 </div>
 
 ---
 
-## 🚀 Features
-- **HIPAA-Compliant Call Handling** via Twilio SIP
-- **Real-time Speech-to-Text** (Whisper.cpp, Indian accent support)
-- **Local LLM Inference** (Llama 3 8B, quantized)
-- **Natural Voice Synthesis** (ElevenLabs TTS)
-- **Intelligent Appointment Scheduling**
-- **End-to-End Encryption & Audit Logging**
+## 🚀 Features (In Development)
+- **Voice Call Handling** via Twilio SIP
+- **Speech-to-Text** using Whisper
+- **AI Response Generation** using Llama 3
+- **Text-to-Speech** using ElevenLabs
+- **Basic Call Flow** for appointment booking
 
 ## 🏗️ Architecture
 
 ```
-Twilio SIP Calls → FastAPI Backend → Local AI Models (Whisper, Llama, TTS)
-                                      │
-                                      ▼
-                                 Database
+Twilio Voice Calls → FastAPI Backend → AI Pipeline (Whisper → Llama → TTS)
 ```
 
 - **Backend**: FastAPI, Python 3.8+
-- **AI Models**: Llama 3 8B, Whisper.cpp
+- **AI Models**: Llama 3 8B, Whisper
 - **Voice**: Twilio SIP, ElevenLabs TTS
-- **Database**: SQLite (dev) / PostgreSQL (prod)
-- **Deployment**: Docker, Docker Compose
+- **Database**: SQLite (basic)
 
 ## ⚡ Quick Start
 
 ### Prerequisites
 - Python 3.8+
-- Docker & Docker Compose
 - Twilio Account
 - ElevenLabs API Key
 - CUDA-capable GPU (recommended)
@@ -72,9 +61,6 @@ cp env.example .env  # Edit .env with your credentials
 ```bash
 cd server
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
-# Or with Docker Compose
-cd ..
-docker-compose up -d
 ```
 
 ### 5. Configure Twilio Webhook
@@ -83,7 +69,6 @@ docker-compose up -d
 ## 🧪 Testing
 ```bash
 pytest
-pytest --cov=server
 python test_pipeline.py
 ```
 
@@ -91,35 +76,26 @@ python test_pipeline.py
 - `/health` - Health check
 - `/twilio/voice` - Handles incoming Twilio voice calls
 - `/transcribe`, `/generate`, `/synthesize` - AI pipeline endpoints
-- [Swagger UI](http://localhost:8000/docs) | [ReDoc](http://localhost:8000/redoc)
+- [Swagger UI](http://localhost:8000/docs)
 
-## 🐳 Deployment
-- `docker-compose up -d` (dev)
-- `docker-compose -f docker-compose.prod.yml up -d` (prod)
-- See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for cloud/Kubernetes
+## 🐳 Docker (Optional)
+```bash
+docker-compose up -d
+```
 
 ## 🔧 Development
-- Format: `black server/`, `isort server/`
-- Lint: `flake8 server/`, `mypy server/`
-- Security: `bandit -r server/`, `safety check`
+- Format: `black server/`
+- Lint: `flake8 server/`
 - Tests: `pytest`
 
-## 🤝 Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md). PRs welcome!
-
-## 📄 License
-MIT License - see [LICENSE](LICENSE)
+## 📄 Project Status
+This project is currently in development. Not all features are fully implemented.
 
 ## 🆘 Support
-- [Wiki](https://github.com/Shriiii01/Clinic-guard-AI/wiki)
-- [Deployment Guide](docs/DEPLOYMENT.md)
 - [GitHub Issues](https://github.com/Shriiii01/Clinic-guard-AI/issues)
-
-## 🙏 Acknowledgments
-- Twilio, Meta (Llama 3), OpenAI (Whisper), ElevenLabs, FastAPI, Hugging Face, and the open-source community.
 
 ---
 
 <div align="center">
-Made with ❤️ for better healthcare
+Work in progress - Building the future of healthcare communication
 </div> 
