@@ -11,7 +11,6 @@ import time
 from dotenv import load_dotenv
 from llama_cpp import Llama
 from server.db import SessionLocal, Patient, Call, ConversationLog, Summary, init_db
-import openai
 
 import threading
 MEMORY_BACKEND = os.getenv("CLINICGUARD_MEMORY_BACKEND", "ephemeral")  # 'ephemeral' or 'persistent'
@@ -169,19 +168,21 @@ def generate_response(prompt: str, session_id: str = None, conversation_history:
             else:
                 conversation_history = memory_backend.get_session(session_id)
                 memory_backend.add_message(session_id, "User", prompt)
+        else:
+            # Use explicit conversation_history if provided, otherwise empty
+            conversation_history = conversation_history or []
         
         # Build the full prompt with conversation history
         full_prompt = """You are a helpful medical appointment booking assistant. Your role is to help patients schedule appointments.\nYou should:\n1. Ask for appointment details (date, time, reason)\n2. Confirm patient information\n3. Provide clear next steps\n4. Be professional but friendly\n5. Maintain context from previous messages\n\nPrevious conversation:\n"""
         if conversation_history:
             for speaker, text in conversation_history:
-                prefix = "User: " if speaker == "User" else "Assistant: "
+                prefix = "User: " if speaker == "User" else ("Assistant: " if speaker == "Assistant" else "System: ")
                 full_prompt += f"{prefix}{text}\n"
         
-        # Add the current user input if not already in history
-        if not session_id:
-            full_prompt += f"User: {prompt}\nAssistant:"
+        # Always add the current user input (it's already in history if session_id exists, but we need it in the prompt)
+        full_prompt += f"User: {prompt}\nAssistant:"
         
-        logger.info(f"Generating response for prompt: {full_prompt[:100]}...")
+        logger.info(f"Generating response for prompt: {full_prompt[:200]}...")
         response = llama_generator(
             full_prompt,
             max_tokens=200,
@@ -310,26 +311,37 @@ def summarize_conversation(conversation: list) -> str:
     """
     text = "\n".join([f"{role}: {msg}" for role, msg in conversation])
     if SUMMARIZER_BACKEND == "openai" and OPENAI_API_KEY:
-        openai.api_key = OPENAI_API_KEY
-        prompt = f"Summarize the following medical appointment conversation for future context. Be concise and focus on patient preferences, patterns, and important details.\n\n{text}\n\nSummary:"
-        response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=prompt,
-            max_tokens=150,
-            temperature=0.5,
-            stop=["\n"]
-        )
-        return response.choices[0].text.strip()
-    else:
-        # Use LLaMA for summarization
-        summary_prompt = f"Summarize the following medical appointment conversation for future context. Be concise and focus on patient preferences, patterns, and important details.\n\n{text}\n\nSummary:"
-        response = llama_generator(
-            summary_prompt,
-            max_tokens=150,
-            temperature=0.5,
-            stop=["\n"]
-        )
-        return response["choices"][0]["text"].strip()
+        try:
+            # Use newer OpenAI API style (compatible with openai>=1.0.0)
+            from openai import OpenAI
+            client = OpenAI(api_key=OPENAI_API_KEY)
+            prompt = f"Summarize the following medical appointment conversation for future context. Be concise and focus on patient preferences, patterns, and important details.\n\n{text}\n\nSummary:"
+            response = client.completions.create(
+                model="gpt-3.5-turbo-instruct",  # Updated from deprecated text-davinci-003
+                prompt=prompt,
+                max_tokens=150,
+                temperature=0.5,
+                stop=["\n"]
+            )
+            return response.choices[0].text.strip()
+        except Exception as e:
+            logger.error(f"OpenAI summarization error: {e}, falling back to LLaMA")
+            # Fall through to LLaMA if OpenAI fails
+            if llama_generator is None:
+                raise Exception("Both OpenAI and LLaMA summarization failed")
+    
+    # Use LLaMA for summarization
+    if llama_generator is None:
+        raise Exception("LLaMA model not loaded and OpenAI summarization not available")
+    
+    summary_prompt = f"Summarize the following medical appointment conversation for future context. Be concise and focus on patient preferences, patterns, and important details.\n\n{text}\n\nSummary:"
+    response = llama_generator(
+        summary_prompt,
+        max_tokens=150,
+        temperature=0.5,
+        stop=["\n"]
+    )
+    return response["choices"][0]["text"].strip()
 
 # Save summary to DB
 def save_summary(patient_id: int, summary_text: str):

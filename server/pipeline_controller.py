@@ -3,15 +3,12 @@ import tempfile
 import logging
 import os
 from typing import List, Tuple
-from server.agent_services import transcribe_audio, generate_response, text_to_speech
+from server.agent_services import transcribe_audio, generate_response, text_to_speech, memory_backend
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# Store conversation history in memory (in a real app, this would be in a database)
-conversation_histories = {}
 
 @router.post("/process_audio")
 async def process_audio(audio: UploadFile = File(...), session_id: str = None):
@@ -28,9 +25,11 @@ async def process_audio(audio: UploadFile = File(...), session_id: str = None):
     try:
         logger.info(f"Received audio file: {audio.filename}")
         
-        # Initialize or get conversation history for this session
-        if session_id not in conversation_histories:
-            conversation_histories[session_id] = []
+        # Generate a default session_id if not provided
+        if session_id is None:
+            import uuid
+            session_id = str(uuid.uuid4())
+            logger.info(f"Generated session_id: {session_id}")
         
         # Save audio to temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
@@ -43,21 +42,18 @@ async def process_audio(audio: UploadFile = File(...), session_id: str = None):
         transcribed = transcribe_audio(tmp_path)
         logger.info(f"Transcription: {transcribed}")
 
-        # Add user input to history
-        conversation_histories[session_id].append(("User", transcribed))
-
-        # Step 2: Generate response with LLaMA
+        # Step 2: Generate response with LLaMA (memory_backend handles history automatically)
         logger.info("Generating response with LLaMA...")
-        reply = generate_response(transcribed, conversation_histories[session_id])
+        reply = generate_response(transcribed, session_id=session_id)
         logger.info(f"LLaMA response: {reply}")
-
-        # Add agent response to history
-        conversation_histories[session_id].append(("Agent", reply))
 
         # Step 3: Convert response to speech
         logger.info("Converting response to speech...")
         output_path = f"/tmp/response_{session_id}.wav"
         text_to_speech(reply, output_path)
+        
+        # Get conversation history from memory backend
+        conversation_history = memory_backend.get_session(session_id)
         
         # Clean up temporary file
         os.unlink(tmp_path)
@@ -66,7 +62,7 @@ async def process_audio(audio: UploadFile = File(...), session_id: str = None):
             "transcription": transcribed,
             "reply": reply,
             "audio_path": output_path,
-            "conversation_history": conversation_histories[session_id]
+            "conversation_history": conversation_history
         }
         
     except Exception as e:

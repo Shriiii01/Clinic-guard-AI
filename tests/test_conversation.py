@@ -20,7 +20,7 @@ def test_conversation_history():
     assert "appointment" in response1.lower() or "schedule" in response1.lower()
     
     # Second turn
-    response2 = generate_response("Yes, that works for me", [
+    response2 = generate_response("Yes, that works for me", conversation_history=[
         ("User", "I need to book an appointment for tomorrow"),
         ("Assistant", response1)
     ])

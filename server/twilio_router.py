@@ -11,7 +11,6 @@ from server.agent_services import (
     transcribe_audio,
     generate_response,
     text_to_speech,
-    session_memory,
     memory_backend,
     MEMORY_BACKEND
 )
@@ -86,12 +85,19 @@ async def handle_voice(request: Request) -> Response:
             await f.write(resp.content)
         logger.info(f"Saved audio to {audio_path}")
 
+        # Extract phone number from Twilio form data
+        phone_number = form_data.get("From")
+        logger.info(f"Call from: {phone_number}")
+
         # 1. Transcribe
         transcription = transcribe_audio(str(audio_path))
         logger.info(f"Transcribed text: {transcription}")
 
         # 2. Generate LLM response
-        agent_response = generate_response(transcription, session_id=call_sid)
+        if MEMORY_BACKEND == "persistent" and phone_number:
+            agent_response = generate_response(transcription, session_id=call_sid, phone_number=phone_number)
+        else:
+            agent_response = generate_response(transcription, session_id=call_sid)
         logger.info(f"Generated response: {agent_response}")
 
         # 3. Text-to-Speech
@@ -129,7 +135,7 @@ async def handle_call_end(request: Request) -> Response:
 
         if MEMORY_BACKEND == "persistent":
             memory_backend.summarize_and_save(call_sid)
-        session_memory.clear_session(call_sid)
+        memory_backend.clear_session(call_sid)
 
         for file in AUDIO_DIR.glob(f"*{call_sid}*"):
             try:
