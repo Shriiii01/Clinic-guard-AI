@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
 import tempfile
 import logging
 import os
@@ -65,6 +65,9 @@ async def process_audio(audio: UploadFile = File(...), session_id: Optional[str]
             "conversation_history": conversation_history
         }
         
+    except FileNotFoundError as e:
+        logger.error(f"Audio file not found: {e}")
+        raise HTTPException(status_code=404, detail=f"Audio file not found: {str(e)}")
     except Exception as e:
-        logger.error(f"Pipeline error: {e}")
-        raise 
+        logger.error(f"Pipeline error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Pipeline processing failed: {str(e)}") 
