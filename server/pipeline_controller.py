@@ -1,8 +1,9 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
 import tempfile
 import logging
 import os
-from typing import List, Tuple
+import uuid
+from typing import Optional
 from server.agent_services import transcribe_audio, generate_response, text_to_speech, memory_backend
 
 logging.basicConfig(level=logging.INFO)
@@ -10,8 +11,11 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Supported audio file extensions
+SUPPORTED_AUDIO_EXTENSIONS = {'.wav', '.mp3', '.m4a', '.ogg', '.flac'}
+
 @router.post("/process_audio")
-async def process_audio(audio: UploadFile = File(...), session_id: str = None):
+async def process_audio(audio: UploadFile = File(...), session_id: Optional[str] = None):
     """
     Process audio through the full pipeline:
     1. Transcribe audio to text using Whisper
@@ -21,19 +25,39 @@ async def process_audio(audio: UploadFile = File(...), session_id: str = None):
     Args:
         audio: Audio file to process
         session_id: Optional session ID to maintain conversation history
+    
+    Returns:
+        dict: Contains transcription, reply, audio_path, and conversation_history
+    
+    Raises:
+        HTTPException: If audio file is invalid or processing fails
     """
+    tmp_path = None
     try:
+        if not audio.filename:
+            raise HTTPException(status_code=400, detail="Audio filename is required")
+        
         logger.info(f"Received audio file: {audio.filename}")
+        
+        # Validate file extension
+        file_ext = os.path.splitext(audio.filename)[1].lower()
+        if file_ext not in SUPPORTED_AUDIO_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported audio format. Supported formats: {', '.join(SUPPORTED_AUDIO_EXTENSIONS)}"
+            )
         
         # Generate a default session_id if not provided
         if session_id is None:
-            import uuid
             session_id = str(uuid.uuid4())
             logger.info(f"Generated session_id: {session_id}")
         
         # Save audio to temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-            tmp.write(await audio.read())
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp:
+            content = await audio.read()
+            if len(content) == 0:
+                raise HTTPException(status_code=400, detail="Audio file is empty")
+            tmp.write(content)
             tmp_path = tmp.name
         logger.info(f"Audio saved to temporary file: {tmp_path}")
 
@@ -62,9 +86,19 @@ async def process_audio(audio: UploadFile = File(...), session_id: str = None):
             "transcription": transcribed,
             "reply": reply,
             "audio_path": output_path,
-            "conversation_history": conversation_history
+            "conversation_history": conversation_history,
+            "session_id": session_id
         }
         
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
-        logger.error(f"Pipeline error: {e}")
-        raise 
+        logger.error(f"Pipeline error: {e}", exc_info=True)
+        # Clean up temp file on error
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+        raise HTTPException(status_code=500, detail=f"Failed to process audio: {str(e)}") 
