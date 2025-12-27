@@ -32,17 +32,16 @@ if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
     logger.warning("TWILIO_ACCOUNT_SID and/or TWILIO_AUTH_TOKEN not set in environment!")
 
 @router.post("/voice/answer")
-async def answer_call():
+async def answer_call() -> PlainTextResponse:
     """
     Initial webhook when the call starts.
     Returns TwiML that tells Twilio to record and then POST to /twilio/voice.
     """
-    twiml_response = """
-    <Response>
-        <Say>Welcome to ClinicGuard AI. Please leave your message after the beep.</Say>
-        <Record action="/twilio/voice" method="POST" maxLength="60"/>
-    </Response>
-    """
+    twiml_response = """<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Say>Welcome to ClinicGuard AI. Please leave your message after the beep.</Say>
+    <Record action="/twilio/voice" method="POST" maxLength="60"/>
+</Response>"""
     return PlainTextResponse(content=twiml_response, media_type="application/xml")
 
 
