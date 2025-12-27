@@ -40,11 +40,13 @@ app.add_middleware(
 
 # 7. Basic health endpoints
 @app.get("/")
-async def root():
+async def root() -> dict:
+    """Root endpoint returning API status."""
     return {"message": "ClinicGuard-AI API is running"}
 
 @app.get("/health")
-async def health():
+async def health() -> dict:
+    """Health check endpoint."""
     return {"status": "healthy"}
 
 if __name__ == "__main__":
