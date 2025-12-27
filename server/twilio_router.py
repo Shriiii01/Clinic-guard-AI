@@ -27,7 +27,7 @@ AUDIO_DIR.mkdir(exist_ok=True)
 
 # Load your Twilio creds from the environment
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN  = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
     logger.warning("TWILIO_ACCOUNT_SID and/or TWILIO_AUTH_TOKEN not set in environment!")
 
