@@ -236,6 +236,8 @@ def text_to_speech(text: str, output_path: str) -> None:
 
 # Persistent session memory manager
 class PersistentSessionMemory:
+    """Persistent session storage using database backend."""
+    
     def __init__(self):
         self._lock = threading.Lock()
         self._sessions = {}  # in-memory cache for active calls
