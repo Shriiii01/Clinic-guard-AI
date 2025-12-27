@@ -106,9 +106,10 @@ async def handle_voice(request: Request) -> Response:
 
         # 4. Return TwiML to play the reply
         public_url = os.getenv("PUBLIC_URL", "http://localhost:8000")
+        audio_url = f"{public_url}/audio/{reply_filename}"
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Play>{public_url}/audio/{reply_filename}</Play>
+    <Play>{audio_url}</Play>
 </Response>"""
         return Response(content=twiml, media_type="application/xml")
 
