@@ -64,7 +64,7 @@ async def handle_voice(request: Request) -> Response:
 
         # Force HTTPS if Twilio gave HTTP
         if recording_url.startswith("http://"):
-            recording_url = "https://" + recording_url[len("http://"):]
+            recording_url = recording_url.replace("http://", "https://", 1)
             logger.info(f"RecordingUrl forced to HTTPS: {recording_url}")
 
         # Download with HTTP Basic Auth
