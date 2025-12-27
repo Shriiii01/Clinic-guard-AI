@@ -43,9 +43,9 @@ async def process_audio(audio: UploadFile = File(...), session_id: Optional[str]
         logger.info(f"Transcription received: {transcribed[:100]}..." if len(transcribed) > 100 else f"Transcription: {transcribed}")
 
         # Step 2: Generate response with LLaMA (memory_backend handles history automatically)
-        logger.info("Generating response with LLaMA...")
+        logger.info(f"Generating response with LLaMA for session {session_id}...")
         reply = generate_response(transcribed, session_id=session_id)
-        logger.info(f"LLaMA response: {reply}")
+        logger.info(f"LLaMA response generated: {reply[:100]}..." if len(reply) > 100 else f"LLaMA response: {reply}")
 
         # Step 3: Convert response to speech
         logger.info("Converting response to speech...")
