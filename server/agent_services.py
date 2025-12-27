@@ -210,6 +210,13 @@ def generate_response(prompt: str, session_id: str = None, conversation_history:
 def text_to_speech(text: str, output_path: str) -> None:
     """
     Convert text to speech and save as WAV file using macOS 'say' command.
+    
+    Args:
+        text: Text to convert to speech
+        output_path: Path where the WAV file will be saved
+        
+    Raises:
+        Exception: If the 'say' command fails
     """
     try:
         logger.info(f"Converting text to speech: {text[:50]}...")
