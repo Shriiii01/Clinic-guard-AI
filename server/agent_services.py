@@ -26,6 +26,8 @@ load_dotenv()
 
 # Centralized session memory management
 class SessionMemory:
+    """Ephemeral in-memory session storage for conversation history."""
+    
     def __init__(self):
         self._sessions: Dict[str, List[Tuple[str, str]]] = {}
     
