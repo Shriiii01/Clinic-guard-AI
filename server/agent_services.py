@@ -75,6 +75,8 @@ except Exception as e:
     llama_generator = None
 
 class ElevenLabsTTS:
+    """Text-to-speech handler using ElevenLabs API."""
+    
     def __init__(self):
         self.api_key = os.getenv('ELEVENLABS_API_KEY')
         self.voice_id = os.getenv('ELEVENLABS_VOICE_ID')  
