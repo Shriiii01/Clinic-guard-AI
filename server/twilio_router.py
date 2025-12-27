@@ -58,7 +58,7 @@ async def handle_voice(request: Request) -> Response:
             raise HTTPException(status_code=400, detail="CallSid is required")
 
         recording_url = form_data.get("RecordingUrl")
-        logger.info(f"POST /twilio/voice called, RecordingUrl={recording_url}")
+        logger.info(f"POST /twilio/voice called for CallSid={call_sid}, RecordingUrl={recording_url}")
         if not recording_url:
             raise HTTPException(status_code=400, detail="RecordingUrl is required")
 
