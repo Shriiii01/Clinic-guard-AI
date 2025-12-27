@@ -23,8 +23,8 @@ app = FastAPI(
 )
 
 # 4. Include routers
-app.include_router(pipeline_router)  # all your AI pipeline endpoints (/transcribe, /generate, /intake…)
-app.include_router(twilio_router)   # /twilio/voice/answer, /twilio/voice, /twilio/voice/end
+app.include_router(pipeline_router, prefix="/api")  # all your AI pipeline endpoints
+app.include_router(twilio_router)  # /twilio/voice/answer, /twilio/voice, /twilio/voice/end
 
 # 5. Serve your audio files for <Play> URLs
 app.mount("/audio", StaticFiles(directory="audio_files"), name="audio")
