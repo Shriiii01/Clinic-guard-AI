@@ -38,9 +38,9 @@ async def process_audio(audio: UploadFile = File(...), session_id: Optional[str]
         logger.info(f"Audio saved to temporary file: {tmp_path}")
 
         # Step 1: Transcribe with Whisper
-        logger.info("Transcribing audio with Whisper...")
+        logger.info(f"Transcribing audio with Whisper for session {session_id}...")
         transcribed = transcribe_audio(tmp_path)
-        logger.info(f"Transcription: {transcribed}")
+        logger.info(f"Transcription received: {transcribed[:100]}..." if len(transcribed) > 100 else f"Transcription: {transcribed}")
 
         # Step 2: Generate response with LLaMA (memory_backend handles history automatically)
         logger.info("Generating response with LLaMA...")
