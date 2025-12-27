@@ -127,10 +127,13 @@ def transcribe_audio(file_path: str) -> str:
     Transcribe audio file using Whisper model.
     
     Args:
-        file_path (str): Path to the audio file
+        file_path: Path to the audio file
         
     Returns:
-        str: Transcribed text
+        Transcribed text as a string
+        
+    Raises:
+        Exception: If Whisper model is not loaded or transcription fails
     """
     try:
         if whisper_model is None:
