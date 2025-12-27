@@ -137,12 +137,16 @@ async def handle_call_end(request: Request) -> Response:
             memory_backend.summarize_and_save(call_sid)
         memory_backend.clear_session(call_sid)
 
+        # Clean up audio files for this call
+        deleted_count = 0
         for file in AUDIO_DIR.glob(f"*{call_sid}*"):
             try:
                 file.unlink()
+                deleted_count += 1
                 logger.info(f"Deleted file: {file}")
             except Exception as e:
                 logger.error(f"Error deleting file {file}: {e}")
+        logger.info(f"Cleaned up {deleted_count} audio file(s) for call {call_sid}")
 
         return Response(content="OK", media_type="text/plain")
 
