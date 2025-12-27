@@ -68,9 +68,10 @@ async def handle_voice(request: Request) -> Response:
             logger.info(f"RecordingUrl forced to HTTPS: {recording_url}")
 
         # Download with HTTP Basic Auth
+        auth = HTTPBasicAuth(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         resp = requests.get(
             recording_url,
-            auth=HTTPBasicAuth(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN),
+            auth=auth,
             timeout=30
         )
         logger.info(f"Download status: {resp.status_code} {resp.reason}")
