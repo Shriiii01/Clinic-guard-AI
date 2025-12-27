@@ -62,6 +62,7 @@ async def process_audio(audio: UploadFile = File(...), session_id: Optional[str]
             "transcription": transcribed,
             "reply": reply,
             "audio_path": output_path,
+            "session_id": session_id,
             "conversation_history": conversation_history
         }
         
