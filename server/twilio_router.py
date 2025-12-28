@@ -91,7 +91,10 @@ async def handle_voice(request: Request) -> Response:
 
         # Extract phone number from Twilio form data
         phone_number = form_data.get("From")
-        logger.info(f"Call from: {phone_number}")
+        if phone_number:
+            logger.info(f"Call from: {phone_number}")
+        else:
+            logger.warning("No phone number provided in Twilio form data")
 
         # 1. Transcribe
         transcription = transcribe_audio(str(audio_path))
