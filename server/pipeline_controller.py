@@ -31,6 +31,15 @@ async def process_audio(audio: UploadFile = File(...), session_id: Optional[str]
     try:
         logger.info(f"Received audio file: {audio.filename}")
         
+        # Validate audio file
+        if audio.filename:
+            file_ext = os.path.splitext(audio.filename)[1].lower()
+            if file_ext not in ALLOWED_AUDIO_EXTENSIONS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unsupported audio format. Allowed formats: {', '.join(ALLOWED_AUDIO_EXTENSIONS)}"
+                )
+        
         # Generate a default session_id if not provided
         if session_id is None:
             session_id = str(uuid.uuid4())
