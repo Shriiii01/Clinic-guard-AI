@@ -17,6 +17,12 @@ MEMORY_BACKEND = os.getenv("CLINICGUARD_MEMORY_BACKEND", "ephemeral")  # 'epheme
 SUMMARIZER_BACKEND = os.getenv("CLINICGUARD_SUMMARIZER_BACKEND", "llama")  # 'llama' or 'openai'
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+# Model configuration constants
+DEFAULT_LLAMA_MAX_TOKENS = 200
+DEFAULT_LLAMA_TEMPERATURE = 0.7
+DEFAULT_SUMMARY_MAX_TOKENS = 150
+DEFAULT_SUMMARY_TEMPERATURE = 0.5
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
