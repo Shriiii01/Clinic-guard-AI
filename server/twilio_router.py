@@ -80,8 +80,12 @@ async def handle_voice(request: Request) -> Response:
         )
         logger.info(f"Download status: {resp.status_code} {resp.reason}")
         if resp.status_code != 200:
-            logger.error(f"Failed to download recording: {resp.status_code} {resp.text[:200]}")
-            raise HTTPException(status_code=500, detail="Failed to download recording")
+            error_detail = resp.text[:200] if resp.text else "No error message"
+            logger.error(f"Failed to download recording: {resp.status_code} - {error_detail}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to download recording from Twilio: HTTP {resp.status_code}"
+            )
 
         # Save WAV locally
         audio_path = AUDIO_DIR / f"{call_sid}.wav"
