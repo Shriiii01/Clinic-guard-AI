@@ -72,9 +72,11 @@ async def process_audio(audio: UploadFile = File(...), session_id: Optional[str]
         logger.info(f"LLaMA response generated: {reply[:100]}..." if len(reply) > 100 else f"LLaMA response: {reply}")
 
         # Step 3: Convert response to speech
-        logger.info("Converting response to speech...")
+        logger.info(f"Converting response to speech for session {session_id}...")
         output_path = f"/tmp/response_{session_id}.wav"
         text_to_speech(reply, output_path)
+        if not os.path.exists(output_path):
+            raise HTTPException(status_code=500, detail="Failed to generate audio file")
         
         # Get conversation history from memory backend
         conversation_history = memory_backend.get_session(session_id)
