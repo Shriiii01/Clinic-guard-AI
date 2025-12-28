@@ -25,6 +25,10 @@ router = APIRouter(prefix="/twilio", tags=["twilio"])
 AUDIO_DIR = Path("audio_files")
 AUDIO_DIR.mkdir(exist_ok=True)
 
+# Configuration constants
+RECORDING_TIMEOUT_SECONDS = 30
+MAX_RECORDING_LENGTH_SECONDS = 60
+
 # Load your Twilio creds from the environment
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
