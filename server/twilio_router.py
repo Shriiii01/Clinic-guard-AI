@@ -41,10 +41,10 @@ async def answer_call() -> PlainTextResponse:
     Initial webhook when the call starts.
     Returns TwiML that tells Twilio to record and then POST to /twilio/voice.
     """
-    twiml_response = """<?xml version="1.0" encoding="UTF-8"?>
+    twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Say>Welcome to ClinicGuard AI. Please leave your message after the beep.</Say>
-    <Record action="/twilio/voice" method="POST" maxLength="60"/>
+    <Record action="/twilio/voice" method="POST" maxLength="{MAX_RECORDING_LENGTH_SECONDS}"/>
 </Response>"""
     return PlainTextResponse(content=twiml_response, media_type="application/xml")
 
