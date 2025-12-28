@@ -240,18 +240,41 @@ def text_to_speech(text: str, output_path: str) -> None:
         output_path: Path where the WAV file will be saved
         
     Raises:
+        ValueError: If text is empty
         Exception: If the 'say' command fails
     """
     try:
-        logger.info(f"Converting text to speech: {text[:50]}...")
+        if not text or not text.strip():
+            raise ValueError("Text cannot be empty for TTS conversion")
+        
+        # Ensure output directory exists
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+            logger.info(f"Created output directory: {output_dir}")
+        
+        logger.info(f"Converting text to speech: {text[:50]}... (total length: {len(text)} chars)")
+        
         # Use macOS 'say' command to generate WAV
-        cmd = f'say -o "{output_path}" --data-format=LEF32@22050 "{text}"'
+        # Escape quotes in text to prevent command injection
+        escaped_text = text.replace('"', '\\"')
+        cmd = f'say -o "{output_path}" --data-format=LEF32@22050 "{escaped_text}"'
         exit_code = os.system(cmd)
+        
         if exit_code != 0:
             raise Exception(f"'say' command failed with exit code {exit_code}")
-        logger.info(f"Speech saved to {output_path}")
+        
+        # Verify file was created
+        if not os.path.exists(output_path):
+            raise Exception(f"TTS output file was not created: {output_path}")
+        
+        file_size = os.path.getsize(output_path)
+        logger.info(f"Speech saved to {output_path} (size: {file_size / 1024:.2f}KB)")
+    except ValueError as e:
+        logger.error(f"TTS validation error: {e}")
+        raise
     except Exception as e:
-        logger.error(f"TTS error: {e}")
+        logger.error(f"TTS error: {e}", exc_info=True)
         raise
 
 # Persistent session memory manager

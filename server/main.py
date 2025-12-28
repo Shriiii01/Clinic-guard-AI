@@ -40,15 +40,33 @@ app.add_middleware(
 )
 
 # 7. Basic health endpoints
-@app.get("/")
+@app.get("/", tags=["health"])
 async def root() -> dict:
-    """Root endpoint returning API status."""
-    return {"message": "ClinicGuard-AI API is running"}
+    """
+    Root endpoint returning API status and basic information.
+    
+    Returns:
+        dict: API status message and version information
+    """
+    return {
+        "message": "ClinicGuard-AI API is running",
+        "version": "1.0.0",
+        "status": "operational"
+    }
 
-@app.get("/health")
+@app.get("/health", tags=["health"])
 async def health() -> dict:
-    """Health check endpoint."""
-    return {"status": "healthy"}
+    """
+    Health check endpoint for monitoring and load balancers.
+    
+    Returns:
+        dict: Health status of the API
+    """
+    return {
+        "status": "healthy",
+        "service": "ClinicGuard-AI",
+        "version": "1.0.0"
+    }
 
 if __name__ == "__main__":
     import uvicorn

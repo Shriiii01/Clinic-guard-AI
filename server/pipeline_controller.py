@@ -95,8 +95,11 @@ async def process_audio(audio: UploadFile = File(...), session_id: Optional[str]
 
         # Step 3: Convert response to speech
         logger.info(f"Converting response to speech for session {session_id}...")
-        output_path = f"/tmp/response_{session_id}.wav"
+        output_dir = Path("/tmp")
+        output_dir.mkdir(exist_ok=True)
+        output_path = str(output_dir / f"response_{session_id}.wav")
         text_to_speech(reply, output_path)
+        
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Failed to generate audio file")
         
@@ -104,14 +107,19 @@ async def process_audio(audio: UploadFile = File(...), session_id: Optional[str]
         conversation_history = memory_backend.get_session(session_id)
         
         # Clean up temporary file
-        os.unlink(tmp_path)
+        try:
+            os.unlink(tmp_path)
+            logger.info(f"Cleaned up temporary file: {tmp_path}")
+        except Exception as e:
+            logger.warning(f"Failed to clean up temporary file {tmp_path}: {e}")
         
         return {
             "transcription": transcribed,
             "reply": reply,
             "audio_path": output_path,
             "session_id": session_id,
-            "conversation_history": conversation_history
+            "conversation_history": conversation_history,
+            "message_count": len(conversation_history) if conversation_history else 0
         }
         
     except FileNotFoundError as e:
