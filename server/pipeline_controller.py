@@ -45,9 +45,19 @@ async def process_audio(audio: UploadFile = File(...), session_id: Optional[str]
             session_id = str(uuid.uuid4())
             logger.info(f"Generated session_id: {session_id}")
         
+        # Validate file size
+        audio_content = await audio.read()
+        audio_size = len(audio_content)
+        if audio_size > MAX_AUDIO_SIZE_BYTES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Audio file too large. Maximum size: {MAX_AUDIO_SIZE_MB}MB"
+            )
+        logger.info(f"Audio file size: {audio_size / 1024 / 1024:.2f}MB")
+        
         # Save audio to temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-            tmp.write(await audio.read())
+            tmp.write(audio_content)
             tmp_path = tmp.name
         logger.info(f"Audio saved to temporary file: {tmp_path}")
 
