@@ -76,7 +76,7 @@ async def handle_voice(request: Request) -> Response:
         resp = requests.get(
             recording_url,
             auth=auth,
-            timeout=30
+            timeout=RECORDING_TIMEOUT_SECONDS
         )
         logger.info(f"Download status: {resp.status_code} {resp.reason}")
         if resp.status_code != 200:
