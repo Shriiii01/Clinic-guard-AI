@@ -4,17 +4,51 @@ import logging
 import os
 import uuid
 from typing import Optional, Dict, Any
+from pathlib import Path
 from server.agent_services import transcribe_audio, generate_response, text_to_speech, memory_backend
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["pipeline"])
 
 # Configuration constants
 MAX_AUDIO_SIZE_MB = 10
 MAX_AUDIO_SIZE_BYTES = MAX_AUDIO_SIZE_MB * 1024 * 1024
 ALLOWED_AUDIO_EXTENSIONS = {'.wav', '.mp3', '.m4a', '.ogg', '.flac'}
+
+
+def validate_audio_file(filename: Optional[str], content: bytes) -> tuple[str, str]:
+    """
+    Validate audio file format and size.
+    
+    Args:
+        filename: Name of the uploaded file
+        content: File content bytes
+        
+    Returns:
+        Tuple of (file_extension, validated_filename)
+        
+    Raises:
+        HTTPException: If validation fails
+    """
+    if not filename:
+        raise HTTPException(status_code=400, detail="Filename is required")
+    
+    file_ext = os.path.splitext(filename)[1].lower()
+    if file_ext not in ALLOWED_AUDIO_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported audio format: {file_ext}. Allowed formats: {', '.join(ALLOWED_AUDIO_EXTENSIONS)}"
+        )
+    
+    if len(content) > MAX_AUDIO_SIZE_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Audio file too large: {len(content) / 1024 / 1024:.2f}MB. Maximum size: {MAX_AUDIO_SIZE_MB}MB"
+        )
+    
+    return file_ext, filename
 
 @router.post("/process_audio")
 async def process_audio(audio: UploadFile = File(...), session_id: Optional[str] = None) -> Dict[str, Any]:
@@ -31,29 +65,17 @@ async def process_audio(audio: UploadFile = File(...), session_id: Optional[str]
     try:
         logger.info(f"Received audio file: {audio.filename}")
         
-        # Validate audio file
-        if audio.filename:
-            file_ext = os.path.splitext(audio.filename)[1].lower()
-            if file_ext not in ALLOWED_AUDIO_EXTENSIONS:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Unsupported audio format. Allowed formats: {', '.join(ALLOWED_AUDIO_EXTENSIONS)}"
-                )
+        # Read audio content first
+        audio_content = await audio.read()
+        
+        # Validate audio file format and size
+        file_ext, validated_filename = validate_audio_file(audio.filename, audio_content)
+        logger.info(f"Validated audio file: {validated_filename} ({file_ext}, {len(audio_content) / 1024 / 1024:.2f}MB)")
         
         # Generate a default session_id if not provided
         if session_id is None:
             session_id = str(uuid.uuid4())
             logger.info(f"Generated session_id: {session_id}")
-        
-        # Validate file size
-        audio_content = await audio.read()
-        audio_size = len(audio_content)
-        if audio_size > MAX_AUDIO_SIZE_BYTES:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Audio file too large. Maximum size: {MAX_AUDIO_SIZE_MB}MB"
-            )
-        logger.info(f"Audio file size: {audio_size / 1024 / 1024:.2f}MB")
         
         # Save audio to temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
