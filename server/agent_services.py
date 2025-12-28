@@ -143,17 +143,31 @@ def transcribe_audio(file_path: str) -> str:
         Transcribed text as a string
         
     Raises:
+        FileNotFoundError: If audio file doesn't exist
         Exception: If Whisper model is not loaded or transcription fails
     """
     try:
         if whisper_model is None:
             raise Exception("Whisper model not loaded")
         
+        # Validate file exists
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Audio file not found: {file_path}")
+        
         logger.info(f"Transcribing audio file: {file_path}")
         result = whisper_model.transcribe(file_path)
-        return result["text"]
+        transcribed_text = result.get("text", "").strip()
+        
+        if not transcribed_text:
+            logger.warning(f"Transcription returned empty text for file: {file_path}")
+        
+        logger.info(f"Transcription completed: {len(transcribed_text)} characters")
+        return transcribed_text
+    except FileNotFoundError:
+        logger.error(f"Audio file not found: {file_path}")
+        raise
     except Exception as e:
-        logger.error(f"Transcription error: {e}")
+        logger.error(f"Transcription error: {e}", exc_info=True)
         raise
 
 def generate_response(prompt: str, session_id: str = None, conversation_history: List[Tuple[str, str]] = None, phone_number: str = None) -> str:
