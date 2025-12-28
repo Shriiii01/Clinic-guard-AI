@@ -1,7 +1,10 @@
 import os
+import logging
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 DB_PATH = os.getenv("CLINICGUARD_DB_PATH", "sqlite:///clinicguard.db")
 engine = create_engine(DB_PATH, connect_args={"check_same_thread": False})
@@ -45,4 +48,13 @@ class Summary(Base):
     patient = relationship("Patient", back_populates="summaries")
 
 def init_db():
-    Base.metadata.create_all(bind=engine) 
+    """
+    Initialize the database by creating all tables.
+    This should be called once at application startup.
+    """
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info(f"Database initialized successfully at {DB_PATH}")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}", exc_info=True)
+        raise 
