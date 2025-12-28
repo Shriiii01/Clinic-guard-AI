@@ -198,8 +198,8 @@ def generate_response(prompt: str, session_id: str = None, conversation_history:
         logger.info(f"Generating response for prompt: {full_prompt[:200]}...")
         response = llama_generator(
             full_prompt,
-            max_tokens=200,
-            temperature=0.7,
+            max_tokens=DEFAULT_LLAMA_MAX_TOKENS,
+            temperature=DEFAULT_LLAMA_TEMPERATURE,
             stop=["\n", "User:", "Assistant:"]
         )
         generated_text = response["choices"][0]["text"].strip()
