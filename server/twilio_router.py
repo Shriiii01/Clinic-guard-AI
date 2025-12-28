@@ -6,6 +6,8 @@ import requests
 from requests.auth import HTTPBasicAuth
 import aiofiles
 from pathlib import Path
+from typing import Optional
+import re
 
 from server.agent_services import (
     transcribe_audio,
@@ -28,12 +30,59 @@ AUDIO_DIR.mkdir(exist_ok=True)
 # Configuration constants
 RECORDING_TIMEOUT_SECONDS = 30
 MAX_RECORDING_LENGTH_SECONDS = 60
+MAX_AUDIO_FILE_SIZE_MB = 10
+MAX_AUDIO_FILE_SIZE_BYTES = MAX_AUDIO_FILE_SIZE_MB * 1024 * 1024
 
 # Load your Twilio creds from the environment
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
     logger.warning("TWILIO_ACCOUNT_SID and/or TWILIO_AUTH_TOKEN not set in environment!")
+
+
+def validate_call_sid(call_sid: Optional[str]) -> str:
+    """
+    Validate Twilio CallSid format.
+    
+    Args:
+        call_sid: The CallSid to validate
+        
+    Returns:
+        The validated CallSid
+        
+    Raises:
+        HTTPException: If CallSid is invalid
+    """
+    if not call_sid:
+        raise HTTPException(status_code=400, detail="CallSid is required")
+    
+    # Twilio CallSids are typically 34 characters, alphanumeric
+    if not re.match(r'^CA[a-f0-9]{32}$', call_sid):
+        logger.warning(f"CallSid format may be invalid: {call_sid}")
+    
+    return call_sid
+
+
+def validate_phone_number(phone_number: Optional[str]) -> Optional[str]:
+    """
+    Validate and normalize phone number format.
+    
+    Args:
+        phone_number: The phone number to validate
+        
+    Returns:
+        Normalized phone number or None if invalid
+    """
+    if not phone_number:
+        return None
+    
+    # Basic validation - remove non-digit characters except +
+    normalized = re.sub(r'[^\d+]', '', phone_number)
+    if len(normalized) < 10:
+        logger.warning(f"Phone number appears invalid: {phone_number}")
+        return None
+    
+    return normalized
 
 @router.post("/voice/answer")
 async def answer_call() -> PlainTextResponse:
@@ -57,14 +106,16 @@ async def handle_voice(request: Request) -> Response:
     """
     try:
         form_data = await request.form()
-        call_sid = form_data.get("CallSid")
-        if not call_sid:
-            raise HTTPException(status_code=400, detail="CallSid is required")
-
+        call_sid = validate_call_sid(form_data.get("CallSid"))
+        
         recording_url = form_data.get("RecordingUrl")
         logger.info(f"POST /twilio/voice called for CallSid={call_sid}, RecordingUrl={recording_url}")
         if not recording_url:
             raise HTTPException(status_code=400, detail="RecordingUrl is required")
+        
+        # Validate recording URL format
+        if not recording_url.startswith(("http://", "https://")):
+            raise HTTPException(status_code=400, detail="Invalid RecordingUrl format")
 
         # Force HTTPS if Twilio gave HTTP
         if recording_url.startswith("http://"):
@@ -87,18 +138,26 @@ async def handle_voice(request: Request) -> Response:
                 detail=f"Failed to download recording from Twilio: HTTP {resp.status_code}"
             )
 
+        # Validate audio file size
+        audio_size = len(resp.content)
+        if audio_size > MAX_AUDIO_FILE_SIZE_BYTES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Audio file too large: {audio_size / 1024 / 1024:.2f}MB (max: {MAX_AUDIO_FILE_SIZE_MB}MB)"
+            )
+        
         # Save WAV locally
         audio_path = AUDIO_DIR / f"{call_sid}.wav"
         async with aiofiles.open(audio_path, 'wb') as f:
             await f.write(resp.content)
-        logger.info(f"Saved audio to {audio_path}")
+        logger.info(f"Saved audio to {audio_path} (size: {audio_size / 1024:.2f}KB)")
 
-        # Extract phone number from Twilio form data
-        phone_number = form_data.get("From")
+        # Extract and validate phone number from Twilio form data
+        phone_number = validate_phone_number(form_data.get("From"))
         if phone_number:
             logger.info(f"Call from: {phone_number}")
         else:
-            logger.warning("No phone number provided in Twilio form data")
+            logger.warning("No valid phone number provided in Twilio form data")
 
         # 1. Transcribe
         transcription = transcribe_audio(str(audio_path))
@@ -141,9 +200,7 @@ async def handle_call_end(request: Request) -> Response:
     """
     try:
         form_data = await request.form()
-        call_sid = form_data.get("CallSid")
-        if not call_sid:
-            raise HTTPException(status_code=400, detail="CallSid is required")
+        call_sid = validate_call_sid(form_data.get("CallSid"))
 
         if MEMORY_BACKEND == "persistent":
             memory_backend.summarize_and_save(call_sid)
