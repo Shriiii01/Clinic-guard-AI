@@ -11,6 +11,11 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Configuration constants
+MAX_AUDIO_SIZE_MB = 10
+MAX_AUDIO_SIZE_BYTES = MAX_AUDIO_SIZE_MB * 1024 * 1024
+ALLOWED_AUDIO_EXTENSIONS = {'.wav', '.mp3', '.m4a', '.ogg', '.flac'}
+
 @router.post("/process_audio")
 async def process_audio(audio: UploadFile = File(...), session_id: Optional[str] = None) -> Dict[str, Any]:
     """
